@@ -42,6 +42,7 @@ public class Utils {
     // Device type reference
     private static int mDeviceType = -1;
     private static Boolean mIsMtkDevice = null;
+    private static Boolean mIsXperiaDevice = null;
     private static Boolean mIsWifiOnly = null;
     private static String mDeviceCharacteristics = null;
     
@@ -54,7 +55,7 @@ public class Utils {
 
     // Supported MTK devices
     private static final Set<String> MTK_DEVICES = new HashSet<String>(Arrays.asList(
-        new String[] {"mt6572", "mt6575","mt6577","mt6589","mt8389"}
+        new String[] {"mt6572","mt6575","mt6577","mt8377","mt6589","mt8389"}
     ));
 
     private static void log(String message) {
@@ -112,6 +113,14 @@ public class Utils {
         mIsMtkDevice = MTK_DEVICES.contains(Build.HARDWARE.toLowerCase());
         return mIsMtkDevice;
     }
+    
+    public static boolean isXperiaDevice() {
+        if (mIsXperiaDevice != null) return mIsXperiaDevice;
+
+        mIsXperiaDevice = Build.MANUFACTURER.equalsIgnoreCase("sony")
+                && !isMtkDevice();
+        return mIsXperiaDevice;
+    }
 
     public static boolean hasGeminiSupport() {
         if (mHasGeminiSupport != null) return mHasGeminiSupport;
@@ -126,7 +135,7 @@ public class Utils {
 
         try {
             ConnectivityManager cm = (ConnectivityManager) con.getSystemService(
-        	    Context.CONNECTIVITY_SERVICE);
+                    Context.CONNECTIVITY_SERVICE);
             mIsWifiOnly = (cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE) == null);
             return mIsWifiOnly;
         } catch (Throwable t) {

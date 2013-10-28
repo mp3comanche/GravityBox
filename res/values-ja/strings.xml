@@ -78,6 +78,10 @@
     <string name="quick_settings_expanded_desktop_expanded">展開中</string>
     <string name="quick_settings_stay_awake_on">常時点灯オン</string>
     <string name="quick_settings_stay_awake_off">常時点灯オフ</string>
+    <string name="quick_settings_wifi">Wi-Fi</string>
+    <string name="quick_settings_wifi_off">Wi-Fiオフ</string>
+    <string name="quick_settings_wifi_not_connected">未接続</string>
+    <string name="quick_settings_wifi_turning_on">オンにしています...</string> 
 
     <!--  QuickSettings settings -->
     <string name="quick_settings_title">ステータスバークイック設定タイル</string>
@@ -86,6 +90,7 @@
     <string name="qs_tile_airplane_mode">機内モード</string>
     <string name="qs_tile_battery">バッテリー状態</string>
     <string name="qs_tile_wifi">Wi-Fi</string>
+    <string name="qs_tile_wifi_alt">Wi-Fi (CMスタイル)</string>
     <string name="qs_tile_bluetooth">Bluetooth</string>
     <string name="qs_tile_gps">GPS</string>
     <string name="qs_tile_gps_alt">GPS (CMスタイル)</string>
@@ -114,7 +119,7 @@
 
     <!--  Statusbar background color -->
     <string name="statusbar_bgcolor_title">ステータスバー背景色</string>
-    <string name="statusbar_bgcolor_summary">ステータスバーの背景色と透過度を設定します。</string>
+    <string name="statusbar_bgcolor_summary">ステータスバーの背景色を設定します。</string>
 
     <!--  Fix speech settings -->
     <string name="fix_tts_settings_title">スピーチ設定の表示</string>
@@ -361,7 +366,6 @@
     <!-- Pie Controls settings -->
     <string name="pie_control_title">パイ操作</string>
     <string name="pie_control_enable_title">パイ操作を有効化</string>
-    <string name="pie_control_search_title">検索キーを表示</string>
     <string name="pie_control_size_title">ナビキーのサイズ</string>
     <string name="pie_control_trigger_positions_title">起動位置</string>
     <string name="pie_control_trigger_left">画面左端</string>
@@ -642,6 +646,7 @@
     <string name="pref_data_traffic_position_title">位置</string>
     <string name="dt_position_auto">自動(時計の位置に従う)</string>
     <string name="dt_position_left">左</string>
+    <string name="dt_position_right">右</string>
     <string name="pref_data_traffic_size_title">サイズ</string>
     <string name="dt_size_normal">中</string>
     <string name="dt_size_smaller">小</string>
@@ -678,6 +683,26 @@
     <string name="pref_hwkey_home_longpress_keyguard_summary">端末をロックしているときにトーチのオンオフをします。ホームキーで画面をオンにする機能がない場合は画面をオンにしないといけません。</string>
 
     <!-- Volume panel: Show expanded -->
-    <string name="pref_volume_panel_autoexpand_title">自動的に拡張</string>
+    <string name="pref_volume_panel_autoexpand_title">自動的に展開</string>
+    
+    <!-- HW Key Actions: Preference screen arrangement -->
+    <string name="pref_cat_hwkey_menu_title">メニューキー</string>
+    <string name="pref_cat_hwkey_home_title">ホームキー</string>
+    <string name="pref_cat_hwkey_back_title">バックキー</string>
+    <string name="pref_cat_hwkey_recents_title">最近のアプリキー</string>
+    <string name="pref_cat_hwkey_volume_title">音量キー</string>
+    <string name="pref_cat_hwkey_actions_others">その他の設定</string>
+    <string name="pref_hwkey_longpress_title">長押しアクション</string>
+    <string name="pref_hwkey_singletap_title">タップアクション</string>
+    <string name="pref_hwkey_doubletap_title">ダブルタップアクション</string>
+
+    <!-- Disable double-tap (e.g. for Home Key on Android 4.3+) -->
+    <string name="pref_hwkey_doubletap_disable_title">ダブルタップを無効化</string>
+    
+    <!-- Color mode for statusbar signal icons -->
+    <string name="pref_statusbar_signal_color_mode_title">単色モード</string>
+    <string name="signal_color_mode_gb">GravityBoxアイコンを使用 (電波強度対応)</string>
+    <string name="signal_color_mode_stock">標準アイコンを使用(信号強度非対応)</string>
+    <string name="signal_color_mode_disabled">色を適用しない</string>
     
 </resources>

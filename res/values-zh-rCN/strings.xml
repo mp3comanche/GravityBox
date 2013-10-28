@@ -377,7 +377,6 @@
     <!-- Pie Controls settings -->
     <string name="pie_control_title">虚拟键控制</string>
     <string name="pie_control_enable_title">启用Pie Controls虚拟键控制</string>
-    <string name="pie_control_search_title">显示搜索键</string>
     <string name="pie_control_size_title">虚拟键大小</string>
     <string name="pie_control_trigger_positions_title">触发位置</string>
     <string name="pie_control_trigger_left">屏幕左边缘</string>
@@ -710,5 +709,14 @@
     <string name="pref_hwkey_longpress_title">长按动作</string>
     <string name="pref_hwkey_singletap_title">单按动作</string>
     <string name="pref_hwkey_doubletap_title">双击动作</string>
+    
+    <!-- Disable double-tap (e.g. for Home Key on Android 4.3+) -->
+    <string name="pref_hwkey_doubletap_disable_title">禁用双击</string>
+
+    <!-- Color mode for statusbar signal icons -->
+    <string name="pref_statusbar_signal_color_mode_title">信号色彩模式</string>
+    <string name="signal_color_mode_gb">使用GravityBox图标 (有信号等级)</string>
+    <string name="signal_color_mode_stock">使用stock图标 (无信号等级)</string>
+    <string name="signal_color_mode_disabled">不使用颜色</string>
 
 </resources>

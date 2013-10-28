@@ -96,7 +96,7 @@
     <string name="quick_settings_wifi">Wi-Fi</string>
     <string name="quick_settings_wifi_off">Wi-Fi off</string>
     <string name="quick_settings_wifi_not_connected">Not connected</string>
-    <string name="quick_settings_wifi_turning_on">Turning on...</string>
+    <string name="quick_settings_wifi_turning_on">Turning on&#8230;</string>
 
     <!--  QuickSettings settings -->
     <string name="quick_settings_title">Statusbar QuickSettings tiles</string>
@@ -134,7 +134,7 @@
 
     <!--  Statusbar background color -->
     <string name="statusbar_bgcolor_title">Statusbar background color</string>
-    <string name="statusbar_bgcolor_summary">Allows to set statusbar background color and transparency</string>
+    <string name="statusbar_bgcolor_summary">Allows to set statusbar background color</string>
 
     <!--  Fix speech settings -->
     <string name="fix_tts_settings_title">Fix speech settings</string>
@@ -377,7 +377,6 @@
     <!-- Pie Controls settings -->
     <string name="pie_control_title">Pie controls</string>
     <string name="pie_control_enable_title">Enable pie controls</string>
-    <string name="pie_control_search_title">Show search button</string>
     <string name="pie_control_size_title">Navigation key size</string>
     <string name="pie_control_trigger_positions_title">Trigger positions</string>
     <string name="pie_control_trigger_left">Left screen border</string>
@@ -401,9 +400,9 @@
     <string name="pref_holo_bg_dither_title">Dithered Holo background</string>
     <string name="pref_holo_bg_dither_summary">Replaces standard Holo background with dithered one to suppress color banding (requires reboot)</string>
 
-    <!-- Disable hardware keys for pie -->
-    <string name="pref_hwkeys_disable_title">Disable hardware keys</string>
-    <string name="pref_hwkeys_disable_summary">Disables MENU, BACK, HOME while Pie Controls are enabled. HW keys actions will still work. (for devices having HW keys)</string>
+    <!-- Disable navigation keys for pie -->
+    <string name="pref_hwkeys_disable_title">Disable navigation keys</string>
+    <string name="pref_hwkeys_disable_summary">Disables single-tap on keys while Pie Controls are enabled</string>
 
     <!-- Option for GB dark theme -->
     <string name="pref_gb_theme_dark_title">Use Holo Dark theme</string>
@@ -710,5 +709,47 @@
     <string name="pref_hwkey_longpress_title">Long-press action</string>
     <string name="pref_hwkey_singletap_title">Single-tap action</string>
     <string name="pref_hwkey_doubletap_title">Double-tap action</string>
+
+    <!-- Disable double-tap (e.g. for Home Key on Android 4.3+) -->
+    <string name="pref_hwkey_doubletap_disable_title">Disable double-tap</string>
+
+    <!-- Color mode for statusbar signal icons -->
+    <string name="pref_statusbar_signal_color_mode_title">Signal color mode</string>
+    <string name="signal_color_mode_gb">Use GravityBox icons (with signal level support)</string>
+    <string name="signal_color_mode_stock">Use stock icons (without signal level support)</string>
+    <string name="signal_color_mode_disabled">Do not apply color</string>
+
+    <!-- Application launcher -->
+    <string name="pref_cat_app_launcher_title">Application launcher</string>
+    <string name="pref_cat_app_launcher_summary">Dialog allowing to define up to 8 apps which can be assigned as HW Key Action or used as additional navigation bar key</string>
+    <string name="pref_app_launcher_slot_title">Application slot %d</string>
+    <string name="app_launcher_no_apps">No apps assigned. Use GravityBox / Application launcher menu to assign apps.</string>
+
+    <!-- Navigation bar app launcher key -->
+    <string name="pref_navbar_launcher_enable_title">Show app launcher key</string>
+
+    <!-- HW Key Actions: application launcher -->
+    <string name="hwkey_action_app_launcher">Show application launcher</string>
+
+    <!-- Pie custom key -->
+    <string name="pref_pie_control_custom_key_title">Show custom key</string>
+    <string name="pie_custom_key_off">Disabled</string>
+    <string name="pie_custom_key_search">Search</string>
+    <string name="pie_custom_key_app_launcher">Application launcher</string>
+
+    <!-- Pie colors -->
+    <string name="pref_cat_pie_colors_title">Pie colors</string>
+    <string name="pref_pie_color_bg_title">Background color</string>
+    <string name="pref_pie_color_fg_title">Foreground color</string>
+    <string name="pref_pie_color_outline_title">Outline color</string>
+    <string name="pref_pie_color_selected_title">Key selected color</string>
+    <string name="pref_pie_color_text_title">Text color</string>
+    <string name="pref_pie_color_reset_title">Reset colors</string>
+
+    <!-- Custom unknown caller photo -->
+    <string name="pref_caller_unknown_photo_enable_title">Enable unknown caller photo</string>
+    <string name="pref_caller_unknown_photo_title">Set unknown caller photo</string>
+    <string name="caller_unknown_photo_result_successful">Photo changed</string>
+    <string name="caller_unkown_photo_result_not_successful">Photo not changed</string>
 
 </resources>
