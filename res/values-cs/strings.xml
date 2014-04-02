@@ -236,7 +236,7 @@
     <string name="pref_cat_media_summary">Obsahuje různá nastavení týkající se médií a audio systému</string>
 
     <!-- More music volume steps -->
-    <string name="pref_music_volume_steps_title">Více úrovní hlasitoti</string>
+    <string name="pref_music_volume_steps_title">Více úrovní hlasitosti</string>
     <string name="pref_music_volume_steps_summary">Přidá více úrovní hlasitosti pro stream hudby (vyžaduje restart)</string>
 
     <!-- Safe headset media volume -->
@@ -681,7 +681,7 @@
 
     <!-- HW Key Actions: Preference screen arrangement -->
     <string name="pref_cat_hwkey_menu_title">Tlačítko Menu</string>
-    <string name="pref_cat_hwkey_home_title">Tlačítko Domov</string>
+    <string name="pref_cat_hwkey_home_title">Tlačítko Domů</string>
     <string name="pref_cat_hwkey_back_title">Tlačítko Zpět</string>
     <string name="pref_cat_hwkey_recents_title">Tlačítko Spuštěné aplikace</string>
     <string name="pref_cat_hwkey_volume_title">Tlačítka ovládání hlasitosti</string>
@@ -701,7 +701,7 @@
 
     <!-- Application launcher -->
     <string name="pref_cat_app_launcher_title">Spouštěč aplikací</string>
-    <string name="pref_cat_app_launcher_summary">Dialog s aplikacemi, který může být aktivován na akcii tlačítka, nebo přes dodatečné tlačítko navigační lišty, nebo z koláče</string>
+    <string name="pref_cat_app_launcher_summary">Dialog s aplikacemi, který může být aktivován na akci tlačítka, nebo přes dodatečné tlačítko navigační lišty, nebo z koláče</string>
     <string name="pref_app_launcher_slot_title">Aplikace %d</string>
     <string name="app_launcher_no_apps">Nejsou přiřazeny žádné aplikace. Použijte GravityBox / Spouštěč aplikací pro přiřazení aplikací.</string>
 
