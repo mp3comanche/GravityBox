@@ -16,6 +16,10 @@
 
 package com.ceco.gm2.gravitybox;
 
+import com.ceco.gm2.gravitybox.StatusBarIconManager.ColorInfo;
+import com.ceco.gm2.gravitybox.StatusBarIconManager.IconManagerListener;
+
+import de.robv.android.xposed.XposedBridge;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -30,12 +34,18 @@ import android.graphics.Paint.Align;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Handler;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.ImageView;
 
-public class CmCircleBattery extends ImageView {
+public class CmCircleBattery extends ImageView implements IconManagerListener {
+    private static final String TAG = "GB:CircleBattery";
+    private static final String PACKAGE_NAME = "com.android.systemui";
+    private static final boolean DEBUG = false;
+
     private Handler mHandler;
     private Context mContext;
     private BatteryReceiver mBatteryReceiver = null;
@@ -65,6 +75,10 @@ public class CmCircleBattery extends ImageView {
     private Paint   mPaintGray;
     private Paint   mPaintSystem;
     private Paint   mPaintRed;
+
+    private static void log(String message) {
+        XposedBridge.log(TAG + ": " + message);
+    }
 
     // runnable to invalidate view via mHandler.postDelayed() call
     private final Runnable mInvalidate = new Runnable() {
@@ -158,8 +172,9 @@ public class CmCircleBattery extends ImageView {
         mPaintSystem = new Paint(mPaintFont);
         mPaintRed = new Paint(mPaintFont);
 
-        mPaintFont.setColor(res.getColor(android.R.color.holo_blue_dark));
-        mPaintSystem.setColor(res.getColor(android.R.color.holo_blue_dark));
+        mPaintFont.setColor(Build.VERSION.SDK_INT > 18 ? Color.WHITE : 
+            res.getColor(android.R.color.holo_blue_dark));
+        mPaintSystem.setColor(mPaintFont.getColor());
         // could not find the darker definition anywhere in resources
         // do not want to use static 0x404040 color value. would break theming.
         mPaintGray.setColor(res.getColor(android.R.color.darker_gray));
@@ -327,18 +342,29 @@ public class CmCircleBattery extends ImageView {
      * statusbar for all resolutions
      */
     private void initSizeMeasureIconHeight() {
-        int wifiIconId = 
-                getResources().getIdentifier("stat_sys_wifi_signal_4_fully", "drawable", "com.android.systemui");
-        final Bitmap measure = BitmapFactory.decodeResource(getResources(), wifiIconId);
-        final int x = measure.getWidth() / 2;
-
-        mCircleSize = 2;
-        for (int y = 0; y < measure.getHeight(); y++) {
-            int alpha = Color.alpha(measure.getPixel(x, y));
-            if (alpha > 5) {
-                mCircleSize++;
+        final Resources res = getResources();
+        final int minSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                15, res.getDisplayMetrics());
+        try {
+            final int batteryIconId = 
+                    res.getIdentifier("stat_sys_battery_100", "drawable", PACKAGE_NAME);
+            final Bitmap measure = BitmapFactory.decodeResource(res, batteryIconId);
+            final int x = measure.getWidth() / 2;
+            mCircleSize = 0;
+            for (int y = 0; y < measure.getHeight(); y++) {
+                int alpha = Color.alpha(measure.getPixel(x, y));
+                if (alpha > 5) {
+                    mCircleSize++;
+                }
             }
+            if (mCircleSize < minSize) {
+                mCircleSize = minSize;
+            }
+        } catch (Throwable t) {
+            log("Error determining Circle Battery size from battery icon: " + t.getMessage());
+            mCircleSize = minSize;
         }
+        if (DEBUG) log("mCircleSize = " + mCircleSize + "px");
     }
 
     public void setColor(int color) {
@@ -354,5 +380,15 @@ public class CmCircleBattery extends ImageView {
         mPaintFont.setAlpha(alpha);
         mPaintRed.setAlpha(alpha);
         invalidate();
+    }
+
+    @Override
+    public void onIconManagerStatusChanged(int flags, ColorInfo colorInfo) {
+        if ((flags & StatusBarIconManager.FLAG_ICON_COLOR_CHANGED) != 0) {
+            setColor(colorInfo.coloringEnabled ?
+                    colorInfo.iconColor[0] : colorInfo.defaultIconColor);
+        } else if ((flags & StatusBarIconManager.FLAG_LOW_PROFILE_CHANGED) != 0) {
+            setLowProfile(colorInfo.lowProfile);
+        }
     }
 }

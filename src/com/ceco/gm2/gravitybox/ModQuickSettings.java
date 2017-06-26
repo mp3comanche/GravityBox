@@ -59,6 +59,7 @@ import android.net.ConnectivityManager;
 import android.os.Build;
 import android.os.IBinder;
 import android.provider.Settings;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -66,6 +67,7 @@ import android.view.View.MeasureSpec;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XC_MethodReplacement;
@@ -86,6 +88,8 @@ public class ModQuickSettings {
     private static final String CLASS_QS_MODEL = "com.android.systemui.statusbar.phone.QuickSettingsModel";
     private static final String CLASS_QS_MODEL_RCB = "com.android.systemui.statusbar.phone.QuickSettingsModel$RefreshCallback";
     private static final String CLASS_QS_MODEL_STATE = "com.android.systemui.statusbar.phone.QuickSettingsModel.State";
+    private static final String CLASS_ROTATION_LOCK_CTRL = "com.android.systemui.statusbar.policy.RotationLockController";
+    private static final String CLASS_ROTATION_POLICY = "com.android.internal.view.RotationPolicy";
     private static final boolean DEBUG = false;
 
     private static final float STATUS_BAR_SETTINGS_FLIP_PERCENTAGE_RIGHT = 0.15f;
@@ -164,6 +168,7 @@ public class ModQuickSettings {
         tmpMap.put("battery_textview", 7);
         tmpMap.put("airplane_mode_textview", 8);
         tmpMap.put("bluetooth_textview", 9);
+        tmpMap.put("gps_textview", 10);
         mAospTileTags = Collections.unmodifiableMap(tmpMap);
 
         mAllTileViews = new HashMap<String, View>();
@@ -235,81 +240,153 @@ public class ModQuickSettings {
             return;
         }
 
-        final List<View> dynamicTiles = new ArrayList<View>();
-
-        final int tileCount = mContainerView.getChildCount();
-        for(int i = tileCount - 1; i >= 0; i--) {
-            View view = mContainerView.getChildAt(i);
-            final String key = getTileKey(view);
-            if (key != null) {
-                if (!mAllTileViews.containsKey(key)) {
-                    mAllTileViews.put(key, view);
+        try {
+            final List<View> dynamicTiles = new ArrayList<View>();
+    
+            final int tileCount = mContainerView.getChildCount();
+            for(int i = tileCount - 1; i >= 0; i--) {
+                View view = mContainerView.getChildAt(i);
+                final String key = getTileKey(view);
+                if (key != null) {
+                    if (!mAllTileViews.containsKey(key)) {
+                        mAllTileViews.put(key, view);
+                    }
+                    mContainerView.removeView(view);
+                } else if (view != null) {
+                    // found tile that's not in our custom list
+                    // might be dynamic tile (e.g. alarm) or some ROM specific tile?
+                    // remove it and store it so it could be added in the end
+                    dynamicTiles.add(view);
+                    mContainerView.removeView(view);
                 }
-                mContainerView.removeView(view);
-            } else if (view != null) {
-                // found tile that's not in our custom list
-                // might be dynamic tile (e.g. alarm) or some ROM specific tile?
-                // remove it and store it so it could be added in the end
-                dynamicTiles.add(view);
-                mContainerView.removeView(view);
+            }
+    
+            for (String key : mActiveTileKeys) {
+                if (mAllTileViews.containsKey(key)) {
+                    mContainerView.addView(mAllTileViews.get(key));
+                }
+            }
+    
+            // add tiles from dynamic list as last (e.g. alarm tile we previously removed)
+            for (View v : dynamicTiles) {
+                mContainerView.addView(v);
+            }
+    
+            // trigger layout refresh
+            XposedHelpers.callMethod(mContainerView, "updateResources");
+        } catch (Throwable t) {
+            XposedBridge.log(t);
+        }
+    }
+
+    private static TextView findTileTextView(ViewGroup viewGroup) {
+        if (viewGroup == null) return null;
+
+        TextView textView = null;
+        final int childCount = viewGroup.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            View childView = viewGroup.getChildAt(i);
+            if (childView instanceof ViewGroup) {
+                textView = findTileTextView((ViewGroup) childView);
+            } else if (childView instanceof TextView) {
+                textView = (TextView) childView;
+            }
+            if (textView != null) {
+                break;
             }
         }
 
-        for (String key : mActiveTileKeys) {
-            if (mAllTileViews.containsKey(key)) {
-                mContainerView.addView(mAllTileViews.get(key));
-            }
-        }
-
-        // add tiles from dynamic list as last (e.g. alarm tile we previously removed)
-        for (View v : dynamicTiles) {
-            mContainerView.addView(v);
-        }
-
-        // trigger layout refresh
-        XposedHelpers.callMethod(mContainerView, "updateResources");
+        return textView;
     }
 
     private static void updateTileLayout(FrameLayout container, int orientation) {
         if (container == null) return;
 
-        int tileCount = container.getChildCount();
-        int textSize = 12;
+        try {
+            int textSize = 12;
+            final Resources res = container.getResources();
 
-        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            switch (mNumColumns) {
-                case 4: textSize = 10; break;
-                case 5: textSize = 8; break;
-                case 3:
-                default: textSize = 12;
+            int imgMarginTop = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                    27, res.getDisplayMetrics());
+            int imgMarginBottom = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                    17, res.getDisplayMetrics());
+            try {
+                imgMarginTop = res.getDimensionPixelSize(
+                        res.getIdentifier("qs_tile_margin_above_icon", "dimen", PACKAGE_NAME));
+                imgMarginBottom = res.getDimensionPixelSize(
+                        res.getIdentifier("qs_tile_margin_below_icon", "dimen", PACKAGE_NAME));
+            } catch (Resources.NotFoundException rnfe) {
+                //
             }
-        }
 
-        for(int i = 0; i < tileCount; i++) {
-            ViewGroup viewGroup = (ViewGroup) mContainerView.getChildAt(i);
-            if (viewGroup != null) {
-                int childCount = viewGroup.getChildCount();
-                for(int j = 0; j < childCount; j++) {
-                    View childView = viewGroup.getChildAt(j);
-                    TextView targetView = null;
-                    if (childView instanceof ViewGroup) {
-                        int innerChildCount = ((ViewGroup) childView).getChildCount();
-                        for (int k = 0; k < innerChildCount; k++) {
-                            View innerChildView = ((ViewGroup) childView).getChildAt(k); 
-                            if (innerChildView instanceof TextView) {
-                                targetView = (TextView) innerChildView;
+            final int imgResId = res.getIdentifier("image", "id", PACKAGE_NAME);
+            final int rssiImgResId = res.getIdentifier("rssi_image", "id", PACKAGE_NAME);
+
+            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                switch (mNumColumns) {
+                    case 4: 
+                        textSize = 10;
+                        imgMarginTop = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                                17, res.getDisplayMetrics());
+                        imgMarginBottom = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                                11, res.getDisplayMetrics());
+                        break;
+                    case 5:
+                        imgMarginTop = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                                10, res.getDisplayMetrics());
+                        imgMarginBottom = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP,
+                                5, res.getDisplayMetrics());
+                        textSize = 8; 
+                        break;
+                    case 3:
+                    default:
+                        textSize = 12;
+                        break;
+                }
+            }
+
+            final int tileCount = container.getChildCount();
+            for(int i = 0; i < tileCount; i++) {
+                ViewGroup viewGroup = (ViewGroup) mContainerView.getChildAt(i);
+                if (viewGroup != null) {
+                    TextView textView = findTileTextView(viewGroup);
+                    if (textView != null) {
+                        textView.setTextSize(1, textSize);
+                        textView.setSingleLine(false);
+                        textView.setAllCaps(true);
+                    }
+    
+                    // adjust layout in case it's AOSP 4.3+ tile
+                    if (Build.VERSION.SDK_INT > 17 && imgResId != 0 && rssiImgResId != 0) {
+                        View img = viewGroup.findViewById(imgResId);
+                        if (img != null) {
+                            // basic tile
+                            if (img.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) img.getLayoutParams();
+                                lp.topMargin = imgMarginTop;
+                                lp.bottomMargin = imgMarginBottom;
+                                img.setLayoutParams(lp);
+                                img.requestLayout();
+                            }
+                        } else {
+                            // RSSI special tile
+                            img = viewGroup.findViewById(rssiImgResId);
+                            if (img != null && img.getParent() instanceof FrameLayout) {
+                                FrameLayout fl = (FrameLayout) img.getParent();
+                                if (fl.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                                    ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) fl.getLayoutParams();
+                                    lp.topMargin = imgMarginTop;
+                                    lp.bottomMargin = imgMarginBottom;
+                                    fl.setLayoutParams(lp);
+                                    fl.requestLayout();
+                                }
                             }
                         }
-                    } else if (childView instanceof TextView) {
-                        targetView = (TextView) childView;
-                    }
-                    if (targetView != null) {
-                        targetView.setTextSize(1, textSize);
-                        targetView.setSingleLine(false);
-                        targetView.setAllCaps(true);
                     }
                 }
             }
+        } catch (Throwable t) {
+            XposedBridge.log(t);
         }
     }
 
@@ -392,6 +469,32 @@ public class ModQuickSettings {
                 tagAospTileViews(classLoader);
             }
 
+            if (Build.VERSION.SDK_INT > 18) {
+                final Class<?> rlControllerClass = XposedHelpers.findClass(CLASS_ROTATION_LOCK_CTRL, classLoader);
+                XposedHelpers.findAndHookMethod(rlControllerClass, "isRotationLockAffordanceVisible", 
+                        new XC_MethodReplacement() {
+                        @Override
+                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                            return mActiveTileKeys != null ? 
+                                    mActiveTileKeys.contains("auto_rotate_textview") :
+                                    XposedBridge.invokeOriginalMethod(param.method, param.thisObject, param.args);
+                        }
+                });
+                final Class<?> rlPolicyClass = XposedHelpers.findClass(CLASS_ROTATION_POLICY, null);
+                XposedHelpers.findAndHookMethod(rlPolicyClass, "isRotationLockToggleSupported",
+                        Context.class, new XC_MethodReplacement() {
+                        @Override
+                        protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
+                            try {
+                                return XposedHelpers.callStaticMethod(rlPolicyClass, "isRotationSupported", param.args[0]);
+                            } catch (Throwable t) {
+                                XposedBridge.log(t);
+                                return XposedBridge.invokeOriginalMethod(param.method, param.thisObject, param.args);
+                            }
+                        }
+                });
+            }
+
             XposedHelpers.findAndHookMethod(phoneStatusBarClass, "removeNotification", IBinder.class, new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(final MethodHookParam param) throws Throwable {
@@ -424,7 +527,7 @@ public class ModQuickSettings {
                             // let the original method finish its work
                         } else {
                             if (DEBUG) log("animateCollapsePanels: all notifications removed " +
-                            		"but showing QuickSettings - do nothing");
+                                    "but showing QuickSettings - do nothing");
                             param.setResult(null);
                         }
                     }
@@ -479,78 +582,79 @@ public class ModQuickSettings {
                 LayoutInflater inflater = (LayoutInflater) param.args[1];
 
                 mTiles = new ArrayList<AQuickSettingsTile>();
-                mBroadcastSubReceivers = new ArrayList<BroadcastSubReceiver>();
 
                 if (Utils.isMtkDevice()) {
                     WifiTile wt = new WifiTile(mContext, mGbContext, mStatusBar, mPanelBar, mWifiManager);
-                    wt.setupQuickSettingsTile(mContainerView, inflater);
+                    wt.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                     mTiles.add(wt);
                 }
 
                 if (Utils.hasGPS(mContext)) {
                     GpsTile gpsTile = new GpsTile(mContext, mGbContext, mStatusBar, mPanelBar);
-                    gpsTile.setupQuickSettingsTile(mContainerView, inflater);
+                    gpsTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                     mTiles.add(gpsTile);
                 }
 
                 RingerModeTile rmTile = new RingerModeTile(mContext, mGbContext, mStatusBar, mPanelBar);
-                rmTile.setupQuickSettingsTile(mContainerView, inflater);
+                rmTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(rmTile);
 
                 VolumeTile volTile = new VolumeTile(mContext, mGbContext, mStatusBar, mPanelBar);
-                volTile.setupQuickSettingsTile(mContainerView, inflater);
+                volTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(volTile);
 
                 if (!Utils.isWifiOnly(mContext)) {
                     NetworkModeTile nmTile = new NetworkModeTile(mContext, mGbContext, mStatusBar, mPanelBar);
                     nmTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                     mTiles.add(nmTile);
-                    mBroadcastSubReceivers.add(nmTile);
                 }
 
                 SyncTile syncTile = new SyncTile(mContext, mGbContext, mStatusBar, mPanelBar);
-                syncTile.setupQuickSettingsTile(mContainerView, inflater);
+                syncTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(syncTile);
 
                 WifiApTile wifiApTile = new WifiApTile(mContext, mGbContext, mStatusBar, mPanelBar, mWifiManager);
-                wifiApTile.setupQuickSettingsTile(mContainerView, inflater);
+                wifiApTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(wifiApTile);
 
                 if (Utils.hasFlash(mContext)) {
                     TorchTile torchTile = new TorchTile(mContext, mGbContext, mStatusBar, mPanelBar);
-                    torchTile.setupQuickSettingsTile(mContainerView, inflater);
+                    torchTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                     mTiles.add(torchTile);
                 }
 
                 SleepTile sleepTile = new SleepTile(mContext, mGbContext, mStatusBar, mPanelBar);
-                sleepTile.setupQuickSettingsTile(mContainerView, inflater);
+                sleepTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(sleepTile);
 
                 StayAwakeTile swTile = new StayAwakeTile(mContext, mGbContext, mStatusBar, mPanelBar);
-                swTile.setupQuickSettingsTile(mContainerView, inflater);
+                swTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(swTile);
 
                 QuickRecordTile qrTile = new QuickRecordTile(mContext, mGbContext, mStatusBar, mPanelBar);
-                qrTile.setupQuickSettingsTile(mContainerView, inflater);
+                qrTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(qrTile);
 
                 QuickAppTile qAppTile = new QuickAppTile(mContext, mGbContext, mStatusBar, mPanelBar);
                 qAppTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(qAppTile);
-                mBroadcastSubReceivers.add(qAppTile);
 
                 ExpandedDesktopTile edTile = new ExpandedDesktopTile(mContext, mGbContext, mStatusBar, mPanelBar);
                 edTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(edTile);
-                mBroadcastSubReceivers.add(edTile);
 
                 ScreenshotTile ssTile = new ScreenshotTile(mContext, mGbContext, mStatusBar, mPanelBar);
-                ssTile.setupQuickSettingsTile(mContainerView, inflater);
+                ssTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(ssTile);
 
                 GravityBoxTile gbTile = new GravityBoxTile(mContext, mGbContext, mStatusBar, mPanelBar);
-                gbTile.setupQuickSettingsTile(mContainerView, inflater);
+                gbTile.setupQuickSettingsTile(mContainerView, inflater, mPrefs);
                 mTiles.add(gbTile);
+
+                mBroadcastSubReceivers = new ArrayList<BroadcastSubReceiver>();
+                for (AQuickSettingsTile t : mTiles) {
+                    mBroadcastSubReceivers.add(t);
+                }
 
                 updateTileOrderAndVisibility();
             } catch (Throwable t) {
@@ -845,6 +949,17 @@ public class ModQuickSettings {
                                        (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
                                 final boolean mobileDataEnabled = 
                                         (Boolean) XposedHelpers.callMethod(cm, "getMobileDataEnabled");
+
+                                if (Utils.isXperiaDevice()) {
+                                    if (!mobileDataEnabled && mStatusBar != null) {
+                                        XposedHelpers.callMethod(mStatusBar, "animateCollapsePanels");
+                                    }
+
+                                    Intent i = new Intent(ConnectivityServiceWrapper.ACTION_XPERIA_MOBILE_DATA_TOGGLE);
+                                    mContext.sendBroadcast(i);
+                                    return;
+                                }
+
                                 Intent intent = new Intent(ConnectivityServiceWrapper.ACTION_SET_MOBILE_DATA_ENABLED);
                                 intent.putExtra(ConnectivityServiceWrapper.EXTRA_ENABLED, !mobileDataEnabled);
                                 mContext.sendBroadcast(intent);
@@ -887,13 +1002,19 @@ public class ModQuickSettings {
         }
 
         try {
-            XposedHelpers.findAndHookMethod(classQsModel, "addRotationLockTile",
-                    CLASS_QS_TILEVIEW, CLASS_QS_MODEL_RCB, new XC_MethodHook() {
+            final XC_MethodHook addRotationLockTileHook = new XC_MethodHook() {
                 @Override
                 protected void afterHookedMethod(final MethodHookParam param) throws Throwable {
                     ((View)param.args[0]).setTag(mAospTileTags.get("auto_rotate_textview"));
                 }
-            });
+            };
+            if (Build.VERSION.SDK_INT > 18) {
+                XposedHelpers.findAndHookMethod(classQsModel, "addRotationLockTile",
+                        CLASS_QS_TILEVIEW, CLASS_ROTATION_LOCK_CTRL, CLASS_QS_MODEL_RCB, addRotationLockTileHook);
+            } else {
+                XposedHelpers.findAndHookMethod(classQsModel, "addRotationLockTile",
+                        CLASS_QS_TILEVIEW, CLASS_QS_MODEL_RCB, addRotationLockTileHook);
+            }
         } catch (Throwable t) {
             XposedBridge.log(t);
         }
@@ -972,6 +1093,20 @@ public class ModQuickSettings {
             });
         } catch (Throwable t) {
             XposedBridge.log(t);
+        }
+
+        if (Build.VERSION.SDK_INT > 18) {
+            try {
+                XposedHelpers.findAndHookMethod(classQsModel, "addLocationTile",
+                        CLASS_QS_TILEVIEW, CLASS_QS_MODEL_RCB, new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(final MethodHookParam param) throws Throwable {
+                        ((View)param.args[0]).setTag(mAospTileTags.get("gps_textview"));
+                    }
+                });
+            } catch (Throwable t) {
+                XposedBridge.log(t);
+            }
         }
     }
 }

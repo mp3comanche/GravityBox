@@ -52,6 +52,7 @@ public class ModVolumePanel {
     private static boolean mVolumeAdjustMuted;
     private static boolean mVoiceCapable;
     private static boolean mExpandable;
+    private static boolean mExpandFully;
     private static boolean mAutoExpand;
 
     private static void log(String message) {
@@ -67,6 +68,10 @@ public class ModVolumePanel {
                     mExpandable = intent.getBooleanExtra(
                             GravityBoxSettings.EXTRA_EXPANDABLE, false);
                     updateVolumePanelMode();
+                }
+                if (intent.hasExtra(GravityBoxSettings.EXTRA_EXPANDABLE_FULLY)) {
+                    mExpandFully = intent.getBooleanExtra(
+                            GravityBoxSettings.EXTRA_EXPANDABLE_FULLY, false);
                 }
                 if (intent.hasExtra(GravityBoxSettings.EXTRA_AUTOEXPAND)) {
                     mAutoExpand = intent.getBooleanExtra(GravityBoxSettings.EXTRA_AUTOEXPAND, false);
@@ -103,6 +108,9 @@ public class ModVolumePanel {
 
                     mExpandable = prefs.getBoolean(
                             GravityBoxSettings.PREF_KEY_VOLUME_PANEL_EXPANDABLE, false);
+                    mExpandFully = prefs.getBoolean(
+                            GravityBoxSettings.PREF_KEY_VOLUME_PANEL_FULLY_EXPANDABLE, false);
+
                     updateVolumePanelMode();
 
                     mAutoExpand = prefs.getBoolean(GravityBoxSettings.PREF_KEY_VOLUME_PANEL_AUTOEXPAND, false);
@@ -119,6 +127,20 @@ public class ModVolumePanel {
                     context.registerReceiver(mBrodcastReceiver, intentFilter);
                 }
             });
+            
+            if (Utils.isXperiaDevice()) {
+                try {
+                    XposedHelpers.findAndHookMethod(classVolumePanel, "inflateUi", new XC_MethodHook() {
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            mVoiceCapable = XposedHelpers.getBooleanField(param.thisObject, "mVoiceCapable");
+                            updateVolumePanelMode();
+                        }
+                    });
+                } catch (Throwable t) {
+                    if (DEBUG) log("We might want to fix our Xperia detection...");
+                }
+            }
 
             XposedHelpers.findAndHookMethod(classVolumePanel, "createSliders", new XC_MethodHook() {
                 @Override
@@ -143,6 +165,19 @@ public class ModVolumePanel {
                 @Override
                 protected void afterHookedMethod(final MethodHookParam param) throws Throwable {
                     hideNotificationSliderIfLinked();
+                    
+                    if (!mExpandFully)
+                        return;
+                    View mMoreButton = (View) XposedHelpers.getObjectField(mVolumePanel, "mMoreButton");
+                    View mDivider = (View) XposedHelpers.getObjectField(mVolumePanel, "mDivider");
+                    
+                    if (mMoreButton != null) {
+                        mMoreButton.setVisibility(View.GONE);
+                    }
+                    
+                    if (mDivider != null) {
+                    	mDivider.setVisibility(View.GONE);
+                    }
                 }
             });
 
@@ -241,11 +276,16 @@ public class ModVolumePanel {
         View mMoreButton = (View) XposedHelpers.getObjectField(mVolumePanel, "mMoreButton");
         View mDivider = (View) XposedHelpers.getObjectField(mVolumePanel, "mDivider");
 
-        mMoreButton.setVisibility(mExpandable ? View.VISIBLE : View.GONE);
-        if (!mMoreButton.hasOnClickListeners()) {
-            mMoreButton.setOnClickListener((OnClickListener) mVolumePanel);
+        if (mMoreButton != null) {
+            mMoreButton.setVisibility(mExpandable ? View.VISIBLE : View.GONE);
+            if (!mMoreButton.hasOnClickListeners()) {
+                mMoreButton.setOnClickListener((OnClickListener) mVolumePanel);
+            }
         }
-        mDivider.setVisibility(mExpandable ? View.VISIBLE : View.GONE);
+
+        if (mDivider != null) {
+            mDivider.setVisibility(mExpandable ? View.VISIBLE : View.GONE);
+        }
 
         XposedHelpers.setBooleanField(mVolumePanel, "mShowCombinedVolumes", mExpandable);
         XposedHelpers.setObjectField(mVolumePanel, "mStreamControls", null);

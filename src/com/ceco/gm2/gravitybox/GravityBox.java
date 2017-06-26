@@ -42,6 +42,7 @@ public class GravityBox implements IXposedHookZygoteInit, IXposedHookInitPackage
         XposedBridge.log("GB:Device model: " + Build.MODEL);
         XposedBridge.log("GB:Device type: " + (Utils.isTablet() ? "tablet" : "phone"));
         XposedBridge.log("GB:Is MTK device: " + Utils.isMtkDevice());
+        XposedBridge.log("GB:Is Xperia device: " + Utils.isXperiaDevice());
         XposedBridge.log("GB:Has telephony support: " + Utils.hasTelephonySupport());
         XposedBridge.log("GB:Has Gemini support: " + Utils.hasGeminiSupport());
         XposedBridge.log("GB:Android SDK: " + Build.VERSION.SDK_INT);
@@ -69,21 +70,25 @@ public class GravityBox implements IXposedHookZygoteInit, IXposedHookInitPackage
         if (Build.VERSION.SDK_INT > 16) {
             FixTraceFlood.initZygote();
             ModElectronBeam.initZygote(prefs);
-            ModLockscreen.initZygote(prefs);
+            if (Build.VERSION.SDK_INT < 19) {
+                ModLockscreen.init(prefs, null);
+            }
         }
 
         // Common
         ModVolumeKeySkipTrack.init(prefs);
         ModVolKeyCursor.initZygote(prefs);
-        ModCallCard.initZygote();
         ModStatusbarColor.initZygote(prefs);
         PhoneWrapper.initZygote(prefs);
         ModLowBatteryWarning.initZygote(prefs);
         ModDisplay.initZygote(prefs);
         ModAudio.initZygote(prefs);
         ModHwKeys.initZygote(prefs);
-        PatchMasterKey.initZygote();
-        ModPhone.initZygote(prefs);
+        if (Build.VERSION.SDK_INT < 19) {
+            PatchMasterKey.initZygote();
+            ModCallCard.initZygote();
+            ModPhone.initZygote(prefs);
+        }
         ModExpandedDesktop.initZygote(prefs);
         ConnectivityServiceWrapper.initZygote();
     }
@@ -105,6 +110,13 @@ public class GravityBox implements IXposedHookZygoteInit, IXposedHookInitPackage
         if (Build.VERSION.SDK_INT > 16 && resparam.packageName.equals(ModQuickSettings.PACKAGE_NAME)) {
             ModQuickSettings.initResources(prefs, resparam);
         }
+
+        // KitKat
+        if (Build.VERSION.SDK_INT > 18) {
+            if (resparam.packageName.equals(ModLockscreen.PACKAGE_NAME)) {
+                ModLockscreen.initPackageResources(prefs, resparam);
+            }
+        }
     }
 
     @Override
@@ -116,7 +128,7 @@ public class GravityBox implements IXposedHookZygoteInit, IXposedHookInitPackage
 
         // MTK Specific
         if (Utils.isMtkDevice()) {
-            if (Utils.hasGeminiSupport() &&
+            if (Utils.hasGeminiSupport() && !Utils.isMt6572Device() &&
                     lpparam.packageName.equals(ModSignalIconHide.PACKAGE_NAME)) {
                 ModSignalIconHide.init(prefs, lpparam.classLoader);
             }
@@ -183,7 +195,7 @@ public class GravityBox implements IXposedHookZygoteInit, IXposedHookInitPackage
             ModPowerMenu.init(prefs, lpparam.classLoader);
         }
 
-        if (lpparam.packageName.equals(ModCallCard.PACKAGE_NAME)) {
+        if (Build.VERSION.SDK_INT < 19 && lpparam.packageName.equals(ModCallCard.PACKAGE_NAME)) {
             ModCallCard.init(prefs, lpparam.classLoader);
         }
 
@@ -199,7 +211,7 @@ public class GravityBox implements IXposedHookZygoteInit, IXposedHookInitPackage
             ModStatusBar.init(prefs, lpparam.classLoader);
         }
 
-        if (lpparam.packageName.equals(ModPhone.PACKAGE_NAME) &&
+        if (Build.VERSION.SDK_INT < 19 && lpparam.packageName.equals(ModPhone.PACKAGE_NAME) &&
                 Utils.hasTelephonySupport()) {
             ModPhone.init(prefs, lpparam.classLoader);
         }
@@ -221,8 +233,15 @@ public class GravityBox implements IXposedHookZygoteInit, IXposedHookInitPackage
             ModNavigationBar.init(prefs, lpparam.classLoader);
         }
 
-        if (lpparam.packageName.equals(ModMms.PACKAGE_NAME)) {
+        if (Build.VERSION.SDK_INT < 19 && lpparam.packageName.equals(ModMms.PACKAGE_NAME)) {
             ModMms.init(prefs, lpparam.classLoader);
+        }
+
+        // KitKat
+        if (Build.VERSION.SDK_INT > 18) {
+            if (lpparam.packageName.equals(ModLockscreen.PACKAGE_NAME)) {
+                ModLockscreen.init(prefs, lpparam.classLoader);
+            }
         }
     }
 }
